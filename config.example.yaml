@@ -1,0 +1,75 @@
+# Configurazione di ESEMPIO con dati fittizi: `cp config.example.yaml config.yaml` e personalizza.
+# null = non ancora deciso / da ricavare dal sync.
+# I valori fisiologici sono versionati per data nella tabella `thresholds`.
+
+profile:
+  hr_max: 190               # da Garmin heart-rate-zones, da confermare
+  hr_rest: 55               # da Garmin (daily summary)
+  hr_threshold: null        # nessun valore usato; stimabile dal sync
+  pace_threshold_min_km: null   # da derivare dalla mezza recente
+  recent_race:
+    distance_km: 21.0975
+    time: "1:45:00"
+
+goal:
+  race_name: City Marathon
+  race_date: 2026-11-29     # domenica
+  target_time: "3:45:00"    # passo obiettivo ≈ 5:20/km
+  distance_km: 42.195
+  elevation_gain_m: null
+  surface: road
+
+# Un unico blocco fino alla maratona: 5 settimane lun-dom.
+block:
+  start_date: 2026-10-26
+  weeks: 5
+  phase: marathon_specific_taper
+  weeks_plan:               # vincoli per settimana (volume = riferimento, il resto lo decide l'adattamento)
+    1: {week_kind: deload, kind: deload, note: "settimana di scarico, già iniziata"}
+    2: {week_kind: race_week, kind: race_week, note: "gare 7-8/11"}
+    3: {week_kind: normal, kind: recovery_then_build, note: "recupero dalla gara, ultimo carico specifico"}
+    4: {week_kind: taper, kind: taper_start}
+    5: {week_kind: taper, kind: taper_race}
+
+# Eventi fissi: il planner li inserisce così come sono e il validatore li conta come sessioni.
+fixed_events:
+  - {date: 2026-11-07, name: "City Half 21k", intensity: hard, kind: race, duration_min: 95, note: "da spingere forte"}
+  - {date: 2026-11-07, name: "City 5k", intensity: easy, kind: easy, duration_min: 30, note: "defaticamento, stesso giorno del 21k"}
+  - {date: 2026-11-08, name: "City 10k #1", intensity: easy, kind: easy, duration_min: 55, note: "molto easy, back-to-back"}
+  - {date: 2026-11-08, name: "City 10k #2", intensity: easy, kind: easy, duration_min: 55, note: "molto easy, back-to-back"}
+  - {date: 2026-11-29, name: "City Marathon", intensity: race, kind: race, duration_min: 195}
+
+availability:
+  run_days_per_week: 5
+  rest_days_per_week: 1     # riposo totale: niente corsa né forza
+  days: []                  # giorni specifici: li sceglie il planner nei vincoli
+  long_run_days: []
+  max_sessions_per_day: 1   # per la corsa; eccezione: i fixed_events
+
+strength:
+  sessions_per_week: 3      # il planner sceglie i giorni; contenuto lo decidi tu
+  final_week_sessions: 1    # settimana della maratona: scala a 1 (settimana di gara)
+  planned_by: user
+  not_on_hard_run_day: true
+  not_day_before_hard_run: true
+  # il giorno prima di una gara (6/11, 28/11) e i giorni gara: niente forza
+
+load:
+  current_weekly_hours: null    # dal sync
+  current_weekly_km: null
+  current_weekly_dplus_m: null
+
+injuries: []
+
+notes:
+  - "esempio di nota libera per il planner (infortuni, impegni, preferenze)."
+
+# Giorni già decisi dall'atleta: il planner li riproduce esattamente, il validatore li controlla.
+pinned_days:
+  - {date: 2026-10-28, sessions: [{kind: easy, intensity: easy, duration_min: 50}]}
+  - {date: 2026-10-29, sessions: [{kind: easy, intensity: easy, duration_min: 60}], note: "con allunghi (6 da 20 s negli ultimi 10')"}
+  - {date: 2026-11-15, sessions: [{kind: long, intensity: easy, duration_min: 120}], note: "lungo confermato dall'atleta"}
+  - {date: 2026-10-30, sessions: []}        # riposo totale, scelta dell'atleta
+  - {date: 2026-10-31, sessions: [{kind: intervals, intensity: moderate}], note: "fartlek leggero a sensazione, durata a scelta del planner; scelta dell'atleta"}
+  - {date: 2026-11-01, sessions: [{kind: long, intensity: easy, duration_min: 80}], note: "lungo 80', scelta dell'atleta"}
+

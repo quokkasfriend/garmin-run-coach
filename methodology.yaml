@@ -1,0 +1,265 @@
+# Metodologia distillata dai libri. Ogni `value` ha `sources` (libro + capitolo) oppure `project_default: true`.
+# Il planner rifiuta di partire se manca una fonte (vedi plan/methodology.py -> check_provenance).
+# Stato: BOZZA da rivedere. Le voci in `decisions_needed` richiedono una tua scelta.
+
+sources:
+  - {id: koop,   book: "Training Essentials for Ultrarunning (J. Koop, 2016)"}
+  - {id: uphill, book: "Training for the Uphill Athlete (House, Johnston, Jornet, 2019)"}
+  - {id: powell, book: "Relentless Forward Progress (B. Powell, 2011)"}
+
+applicability:
+  note: >
+    I tre libri parlano di ultra e corsa in montagna. Per una maratona su strada valgono i principi
+    (distribuzione dell'intensità, progressione, recupero, tapering), non le prescrizioni di volume
+    o di specificità. Le parti che i libri non coprono sono in `gaps`.
+
+# --- Parametri del validatore (plan/validate.py -> Limits) -------------------------------------
+limits:
+  max_hard_per_week:
+    value: 2
+    sources:
+      - {book: koop,   ref: "ch.9 Short-range plan: TempoRun fino a 3/settimana in fase tempo"}
+      - {book: powell, ref: "ch.2 Speed work: una sessione/settimana nell'adattamento da maratona"}
+      - {book: uphill, ref: "ch.11 Intensity: max 2 sedute Z3/settimana se AeT-LT <10%"}
+    note: "Scelta nel range 1-3 dei libri; gare incluse."
+  long_run_max_pct:
+    value: 0.40
+    sources:
+      - {book: uphill, ref: "ch.11 Base week: lungo = 30-40% del volume settimanale"}
+  z3plus_max_pct:
+    value: 0.20
+    sources:
+      - {book: uphill, ref: "ch.3 Polarized Training (Seiler): ~80% sotto AeT, 6-8% AeT-LT, 12-14% sopra LT"}
+      - {book: uphill, ref: "ch.3 Zone 1: atleti élite 80-85% del volume in Z1-Z2"}
+    note: >
+      Le zone dei libri sono ancorate ad AeT/LT, quelle Garmin alla FC max (Z3 da 160 bpm).
+      Fino al test AeT (vedi to_calibrate) il 20% è una stima.
+  ramp_hours_max_pct:
+    value: 0.10
+    sources:
+      - {book: uphill, ref: "ch.11 Progression: aumenti <=10% settimana su settimana"}
+      - {book: powell, ref: "ch.2 The 10 Percent Rule (guida, non legge)"}
+  ramp_dplus_max_pct:
+    value: 0.10
+    sources:
+      - {book: uphill, ref: "ch.11 Vertical: <=10% su settimane consecutive, <=20% su 4 settimane"}
+  ramp_dplus_floor_m:
+    value: 150
+    project_default: true
+    note: "Sotto questo incremento assoluto il ramp D+ non si applica (D+ basso su strada)."
+  deload_max_ratio:
+    value: 0.80
+    sources:
+      - {book: powell, ref: "ch.2 Recovery: settimana di scarico -15/20%"}
+      - {book: uphill, ref: "ch.11 Modulation: settimana di recupero -40/60%"}
+    note: "Tetto, non obiettivo: lo scarico può essere più profondo. I libri divergono; il planner può scendere fino a 0.50."
+  taper_ratios:
+    value: [0.70, 0.50]
+    sources:
+      - {book: powell, ref: "ch.2 Tapering: settimana 1 ~70% del picco, settimana 2 ~50%, ultima settimana solo corse di scarico"}
+    note: >
+      DECISO dall'utente (2026-10-27): versione Powell. Alternativa scartata: Koop 50%/30%.
+      Si applica al volume NON fisso (gara esclusa) rispetto al picco (max fra baseline e settimane normali).
+  recovery_ratios:
+    value: [0.30, 0.60]
+    project_default: true
+    note: >
+      DECISO dall'utente (2026-10-28): 2 settimane di recupero fisso dopo la maratona. I tetti (30% poi 60% del
+      volume di riferimento) sono miei, in linea con return_to_training (Uphill ch.4: 50% -> 75% -> pieno), da rivedere.
+      Solo corse facili, niente Z3+.
+  recovery_strength:
+    value: 1
+    project_default: true
+    note: "Forza ridotta a 1/settimana nel recupero post-maratona (scelta di progetto, da confermare)."
+
+progression:
+  build_weeks_before_recovery:
+    value: 3
+    sources:
+      - {book: powell, ref: "ch.2 Recovery: max 3 settimane in salita poi scarico"}
+      - {book: uphill, ref: "ch.11 Modulation: 3:1 come punto di partenza, adattabile"}
+      - {book: koop,   ref: "ch.9: il 3:1 è un riferimento, non va forzato"}
+  biggest_load_first:
+    value: true
+    sources:
+      - {book: koop, ref: "ch.9 Concepts: la sessione più carica all'inizio della fase, quando si è più freschi"}
+  increase_one_variable_at_a_time:
+    value: true
+    sources:
+      - {book: uphill, ref: "ch.11 Progression: non aumentare distanza, vertical e intensità nella stessa settimana (<15% se due)"}
+
+# --- Distanziamento delle sessioni dure ----------------------------------------------------------
+hard_session_spacing:
+  min_gap_hours_between_quality:
+    value: 48
+    sources:
+      - {book: powell, ref: "ch.2 Recovery: dopo ogni sforzo duro un giorno facile"}
+      - {book: uphill, ref: "ch.3 Recovery times: alta intensità 48-72 h; ch.5: Z3 e Z4 separati da >=72 h"}
+    note: "Koop ammette giorni duri consecutivi per atleti esperti (ch.9); qui li escludiamo (anche per il vincolo forza)."
+  recovery_after_hard_race:
+    value: "giorno prima e dopo leggeri; la gara è la sessione dura della settimana"
+    sources:
+      - {book: uphill, ref: "ch.12 Scenario Three: gara B/C prima di una A"}
+      - {book: koop,   ref: "ch.12/App.: gare B usate come allenamento, con un giorno leggero intorno"}
+
+# --- Definizione dei workout (per il prompt del planner) ----------------------------------------
+workouts:
+  easy_endurance:
+    rpe: "5-6 (parlare comodamente)"
+    source: {book: koop, ref: "ch.7 EnduranceRun"}
+  recovery_run:
+    rpe: "4-5"
+    duration_min: "<=60, tipico 40"
+    source: {book: koop, ref: "ch.7 RecoveryRun"}
+  steady_state:
+    rpe: 7
+    interval_min: "20-60; totale 30-120"
+    source: {book: koop, ref: "ch.7 SteadyStateRun"}
+  tempo:
+    rpe: "8-9"
+    interval_min: "8-20, recupero 1:2; totale a intensità 30-60 (max 60)"
+    alternative: "continuo 20-40 min dopo 15-20 min di riscaldamento; cruise intervals 3-10 min con 30-60 s di recupero"
+    sources:
+      - {book: koop,   ref: "ch.7 TempoRun"}
+      - {book: powell, ref: "ch.2 Tempo runs / cruise intervals"}
+    note: "Il passo di soglia (LT) è circa il passo sostenibile per 1 ora di gara (Powell)."
+  strides:
+    detail: "8-12 x 20 s (80-120 m) veloci e rilassati, 1 min di recupero, a fine corsa facile"
+    sources:
+      - {book: koop,   ref: "ch.7 RunningStrides"}
+      - {book: powell, ref: "ch.2 Strides"}
+  pick_ups:
+    detail: "6-8 x 8-15 s dentro un lungo facile, >=2 min di recupero, 1 volta/settimana"
+    source: {book: uphill, ref: "ch.5 Pick-ups"}
+  progressive_long:
+    detail: "es. 40 min Z1, 30 Z2, 20 Z3 (5 min Z4 solo se si sta bene); 1 ogni 10-14 giorni"
+    source: {book: uphill, ref: "ch.5 Progressive distance"}
+  long_run_cap_before_race:
+    value: "un lungo chiave 3 weekend prima della gara; poi nessun lungo di maratona negli ultimi 2 weekend"
+    source: {book: powell, ref: "ch.2 Tapering"}
+
+# --- Tapering e settimana di gara ----------------------------------------------------------------
+taper:
+  duration_weeks:
+    value: "2-3"
+    sources:
+      - {book: koop,   ref: "ch.9 Key strategies: iniziare 2-3 settimane prima"}
+      - {book: powell, ref: "ch.2 Tapering: almeno 2, meglio 3"}
+  volume_reduction:
+    koop:   "settimana 1: 40-50% del volume normale; 2: 20-30%; 3: <20% (esempio con 10 h/sett)"
+    powell: "settimana 1: ~70% del picco; 2: ~50%; ultima: solo qualche corsa di 2-5 miglia"
+    note: "Divergono molto. Vedi decisions_needed."
+  intensity:
+    value: "mantenere il tipo di intensità, ridurne il volume (es. tempo 4x10' -> 3x5' -> 2x5' -> 1x5')"
+    source: {book: koop, ref: "ch.9 Intensity: reduce the amount, not the type"}
+  frequency:
+    value: "mantenere o ridurre di poco i giorni di corsa"
+    sources:
+      - {book: koop, ref: "ch.9 Frequency"}
+  specificity:
+    value: "mantenere superficie e terreno degli allenamenti (strada se la gara è su strada)"
+    source: {book: koop, ref: "ch.9 Specificity"}
+  taper_is_not_maintenance:
+    value: "il taper serve ad assorbire il lavoro; non aggiungere sessioni nuove"
+    sources:
+      - {book: koop,   ref: "ch.9 Basics of tapering"}
+      - {book: uphill, ref: "ch.11 T week"}
+  expected_gain:
+    value: "circa +2-3% rispetto a nessun taper; non fare drammi se non è perfetto"
+    source: {book: koop, ref: "ch.9 Tapering (Mujika)"}
+
+race_week:
+  allowed:
+    value: "solo zona recupero, max 4 giorni; due sedute con 3-4 accelerazioni da 30 s e 3 min facili"
+    source: {book: uphill, ref: "ch.11 G week"}
+  strength:
+    value: "nessuna forza nella settimana di gara; una sola seduta core nelle settimane di taper"
+    source: {book: uphill, ref: "ch.11 T week / G week"}
+    note: "In conflitto con la tua richiesta di 3 giorni di forza a settimana. Vedi decisions_needed."
+
+# --- Adattamento a fine blocco (plan/adapt.py -> Thresholds) -------------------------------------
+adaptation:
+  pain_reports_deload:
+    value: 2
+    project_default: true
+  negative_signals_deload:
+    value: 2
+    project_default: true
+  rhr_rise_bpm:
+    value: 5
+    sources:
+      - {book: powell, ref: "ch.2 Overreaching: FC a riposo +10% per >=3 mattine (con 53 bpm ≈ +5)"}
+      - {book: uphill, ref: "ch.4 Resting heart rate"}
+  hrv_drop_pct:
+    value: 7
+    project_default: true
+    note: "I libri citano l'HRV solo come sintomo di overtraining (Uphill ch.4), senza soglia."
+  compliance_repeat:
+    value: 0.70
+    project_default: true
+  compliance_consolidate:
+    value: 0.85
+    project_default: true
+  key_hit_consolidate:
+    value: 0.70
+    project_default: true
+  sick_days_repeat:
+    value: 5
+    project_default: true
+  volume_deload:
+    value: -0.30
+    sources:
+      - {book: powell, ref: "ch.2 Overreaching: ridurre il volume del 30-40% mantenendo l'intensità"}
+  volume_repeat:
+    value: -0.10
+    project_default: true
+  volume_consolidate:
+    value: 0.0
+    project_default: true
+  volume_progress:
+    value: 0.08
+    sources:
+      - {book: uphill, ref: "ch.11 Progression: <=10% a settimana"}
+
+monitoring:
+  workout_grading:
+    value: "A-F dopo ogni sessione; più di 2 C di fila o una C e una D nella stessa settimana: fermarsi e valutare"
+    source: {book: uphill, ref: "ch.4 Grading your workouts"}
+  rpe_as_early_warning:
+    value: "stesso passo che costa più fatica = segnale di stanchezza"
+    source: {book: koop, ref: "ch.7 Why ultrarunners should embrace perceived exertion"}
+  overreaching_vs_overtraining:
+    value: "se dopo 2 settimane di scarico non va meglio è overtraining: più riposo"
+    source: {book: powell, ref: "ch.2 Rest and Recovery"}
+
+return_to_training:
+  after_fatigue_break_gt_2_days:
+    value: "ripartire al 50% della durata per un paio di giorni, poi 75%, poi pieno"
+    source: {book: uphill, ref: "ch.4 Returning to training: Fatigue"}
+  illness:
+    value: "fermarsi ai primi sintomi; al ritorno un giorno facile per ogni giorno di malattia"
+    source: {book: uphill, ref: "ch.4 Illness / After the illness"}
+  missed_volume:
+    value: "pause oltre il 5% del volume mensile: fare un passo indietro nel piano"
+    source: {book: uphill, ref: "ch.3 Continuity"}
+
+# --- Lacune: i libri non coprono, serve una tua decisione ----------------------------------------
+gaps:
+  marathon_pace_session_structure: null
+  peak_weekly_volume_marathon: null
+  long_run_max_duration_marathon: null
+  threshold_pace_from_half_marathon_time: null   # stima da 1:31 solo dopo il sync (Powell: LT ≈ passo di 1 ora)
+
+to_calibrate:
+  - "AeT e LT personali: i libri ancorano le zone a questi due punti (Uphill ch.5, test MAF/ventilatorio/lattato). Le zone Garmin sono su FC max."
+  - "Test 10%: se FC LT supera la FC AeT di più del 10%, c'è ancora base aerobica da costruire (Uphill ch.3)."
+
+decisions_needed:
+  - id: taper_volume
+    decided: "70% poi 50% (Powell), gara esclusa dal conteggio"
+  - id: post_marathon_recovery
+    decided: "2 settimane di recupero fisso dopo la maratona, poi si applica la decisione di fine blocco (adapt.py)"
+  - id: strength_in_taper
+    decided: "3 a settimana fino al 22/11, 1 nella settimana della maratona"
+  - id: deload_depth
+    question: "Scarico: -20% (Powell) o -40/60% (Uphill)? La settimana 1 è già iniziata."
